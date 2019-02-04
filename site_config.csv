@@ -1,0 +1,2 @@
+Plant_name,Latitude,Longitude,Timezone,Elev,surface_tilt,surface_azimuth,albedo,series_modules,parallel_modules,module_name,module_count,module_wattage,inverter_name,inverter_count,inv_pmax,inv_pnom,inv_pmax_default,inv_pmax_temp,inv_pnom_temp,pitch,collector
+Narnaul,28.10024,75.99,Asia/Calcutta,315,40,0,0.2,20,172,Vikram_Solar_Eldora_VSP_72_315_03,3440,315,ABB_PVS800,1,1200,1000,950,55,25,8.15,
