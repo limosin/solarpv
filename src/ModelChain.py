@@ -6,6 +6,16 @@ from pvlib.pvsystem import PVSystem
 from pvlib.location import Location
 from pvlib.modelchain import ModelChain
 
+'''
+Objective : Get the dc output from the modules
+
+Notes:
+
+Steps:
+1. 
+
+'''
+
 # load some module and inverter specifications
 cec_modules = pvlib.pvsystem.retrieve_sam('CECMod')
 sandia_modules = pvlib.pvsystem.retrieve_sam('SandiaMod')
@@ -32,3 +42,4 @@ weather = pd.read_csv('../Narnaul_site/data/weather_data/selected_data.csv', ind
 weather.index = pd.to_datetime(weather.index.values)
 weather.index = weather.index.tz_localize('Asia/Kolkata')
 mc.run_model(times=weather.index, weather=weather)
+print(mc.dc)

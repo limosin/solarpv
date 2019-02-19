@@ -47,11 +47,11 @@ def _get_solarposition(times, location, method='pyephem'):
     '''
     @input : time dataframe, location object, the method to be used
     @output : a Dataframe contatining -> 1. Apparent_Elevation
-                                                                             2. Apparent_Azimuth
-                                                                             3. Elevation
-                                                                             4. Azimuth
-                                                                             5. Apparent_Zenith
-                                                                             6. Zenith
+                                         2. Apparent_Azimuth
+                                         3. Elevation
+                                         4. Azimuth
+                                         5. Apparent_Zenith
+                                         6. Zenith
     '''
     return location.get_solarposition(times=times, method=method)
 
