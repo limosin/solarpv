@@ -1,6 +1,8 @@
 ## Photovoltaic Solar Power Plant Performance model
 
 ### Steps to run the scripts-
+- Clone the repository or download the zip file.
+`git clone https://github.com/limosin/solarpv`
 1. Copy weather data file, lets say `kota.csv` to the main folder.
 2. Navigate to src folder. Run the weather_script.py file, passing weather file name as argument.<br>
       `python weather_script.py kota`
