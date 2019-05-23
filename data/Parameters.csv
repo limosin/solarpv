@@ -1,0 +1,18 @@
+1,Battery Level,V
+2,Relative Humidity,%
+6,Air Temperature,°C
+7,Wind Speed,m/s
+8,Wind Direction,°
+27,Dew Point,°C
+67,Global Radiation 1,W/m2
+126,Diffuse Radiation,W/m2
+260,Atmospheric Pressure QNH,mb
+261,Atmospheric Pressure QFE,mb
+268,Direct Radiation 1,W/m2
+427,Solar Azimuth,°
+748,Global Energy 1,kWh/m2
+749,Diffuse Energy 1,kWh/m2
+750,Direct Energy 1,kWh/m2
+751,Global Energy 1,MJ/m2
+752,Diffuse Energy 1,MJ/m2
+753,Direct Energy 1,MJ/m2
