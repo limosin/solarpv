@@ -45,6 +45,3 @@ if __name__ == '__main__':
 
     except:
         print('Weather data already localized')
-
-    print(solar_data.head())
-    print(weather_data.head())
