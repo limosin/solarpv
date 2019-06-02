@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
 import pandas as pd
 from os import listdir
 import json
@@ -8,11 +9,6 @@ from pvlib.pvsystem import PVSystem, retrieve_sam
 from pvlib.location import Location
 from pvlib.modelchain import ModelChain
 from pvlib.atmosphere import gueymard94_pw
-
-
-Weather_data_path = '../data/weather/'
-solar_data_path = '../data/solar/'
-
 
 # times = weather_data.index
 # solpos = pvlib.solarposition.get_solarposition(times, lats, longs)
@@ -43,36 +39,40 @@ solar_data_path = '../data/solar/'
 # plot_results(output_fl, False, 'Function_level')
 
 class Model():
-    def __init__(self, weather_file, solar_file, data):
-        self.weather_data = pd.read_csv(Weather_data_path+weather_file)
-        self.solar_data = pd.read_csv(solar_data_path + solar_file)
-        self.weather_data['Timestamp'] = pd.to_datetime(self.weather_data['Timestamp'].values, \
+
+    def __init__(self):
+        self.weather_file = None
+        self.solar_file = None
+        self.data = None
+        self.output = 0
+        self.weather_data = None
+        self.solar_data = None
+    
+    def weather_file_setter(self, filepath):
+        self.weather_file = filepath
+        try:
+            self.weather_data = pd.read_csv(self.weather_file)
+            self.weather_data['Timestamp'] = pd.to_datetime(self.weather_data['Timestamp'].values, \
+                                                            utc=True).tz_convert('Asia/Kolkata')
+            self.weather_data.index = self.weather_data['Timestamp']                                                        
+            return True
+        except:
+            return False
+
+    def solar_file_setter(self, filepath):
+        self.solar_file = filepath
+        try:
+            self.solar_data = pd.read_csv(self.solar_file)
+            self.solar_data['Timestamp'] = pd.to_datetime(self.solar_data['Timestamp'].values, \
                                                         utc=True).tz_convert('Asia/Kolkata')
-        self.solar_data['Timestamp'] = pd.to_datetime(self.solar_data['Timestamp'].values, \
-                                                     utc=True).tz_convert('Asia/Kolkata')
-        self.weather_data.index = self.weather_data['Timestamp']
-        self.solar_data.index = self.solar_data['Timestamp']   
-        if 'Timestamp' in self.weather_data.columns:
-            self.weather_data.drop('Timestamp', inplace=True, axis=1)
-        if 'Timestamp' in self.solar_data.columns:
-            self.solar_data.drop('Timestamp', inplace=True, axis=1) 
+            self.solar_data.index = self.solar_data['Timestamp']   
+            return True
+        except:
+            return False
 
-        for col in self.weather_data.columns:
-            if self.weather_data[col].isnull().sum() >0:
-                self.weather_data[col].interpolate(method='time',axis=0, inplace=True)
-            if sum(self.weather_data.isnull().sum(axis=0)) == 0:
-                print('All Null values removed')  
-
-        self.weather_data['precipitable_water'] = gueymard94_pw(self.weather_data['temp_air'],\
-                                                            self.weather_data['relative_humidity'])
-
-        # This row has relative humidity = 100, which is practically not possible
-        if len(self.weather_data.loc[self.weather_data['precipitable_water'] > 8, 'relative_humidity']) > 0:
-            print('Invalid values in the relative humidity column \n Removing such values')
-            self.weather_data.loc['2018-08-19 13:03:00+05:30','relative_humidity'] = 70
-            self.weather_data['precipitable_water'] = gueymard94_pw(self.weather_data['temp_air'], self.weather_data['relative_humidity'])
-
-        self.lats, self.longs = data['lats'], data['longs']
+    def data_setter(self, data):
+        self.lats = data['lats']
+        self.longs = data['longs']
         self.tilt = data['tilt']
         self.surf_azi = data['surf_azi'] #since panel faces south
         self.altitude = data['altitude']
@@ -90,7 +90,7 @@ class Model():
                 self.panel_model = retrieve_sam('SandiaMod')
                 self.panel_model = self.panel_model[data['module']]
             except:
-                print('Module not found in the database!!')
+                return False, str('Module not found in the database!!')
         try:    
             self.inverter_model = retrieve_sam('CECinverter')
             self.inverter_model = self.inverter_model[data['inverter']]
@@ -99,8 +99,62 @@ class Model():
                 self.inverter_model = retrieve_sam('SandiaInverter')
                 self.inverter_model = self.inverter_model[data['inverter']]
             except:
-                print('Inverter model not found in the database!!')
+                return False, str('Inverter model not found in the database!!')
+        
+        return True, str('Pass')
+        
+    def preprocess(self):
+        
+        if self.timezone != 'Asia/Kolkata':
+            self.weather_data['Timestamp'] = pd.to_datetime(self.weather_data['Timestamp'].values, \
+                                                            utc=True).tz_convert(self.timezone)
+            self.solar_data['Timestamp'] = pd.to_datetime(self.solar_data['Timestamp'].values, \
+                                                        utc=True).tz_convert(self.timezone)
+        
+        if 'Timestamp' in self.weather_data.columns:
+            self.weather_data.drop('Timestamp', inplace=True, axis=1)
+        if 'Timestamp' in self.solar_data.columns:
+            self.solar_data.drop('Timestamp', inplace=True, axis=1) 
 
+        for col in self.weather_data.columns:
+            if self.weather_data[col].isnull().sum() >0:
+                self.weather_data[col].interpolate(method='time',axis=0, inplace=True)
+            # if sum(self.weather_data.isnull().sum(axis=0)) == 0:
+            #     print('All Null values removed')  
+
+        self.weather_data['precipitable_water'] = gueymard94_pw(self.weather_data['temp_air'],\
+                                                            self.weather_data['relative_humidity'])
+
+        # This row has relative humidity = 100, which is practically not possible
+        if len(self.weather_data.loc[self.weather_data['precipitable_water'] > 8, 'relative_humidity']) > 0:
+            print('Invalid values in the relative humidity column \n Removing such values')
+            self.weather_data.loc['2018-08-19 13:03:00+05:30','relative_humidity'] = 70
+            self.weather_data['precipitable_water'] = gueymard94_pw(self.weather_data['temp_air'], self.weather_data['relative_humidity'])
+
+    def export_fig(self, output):
+        Power_orig_ac = self.solar_data['Pac']
+        Power_orig_dc = self.solar_data['Vpv1']*self.solar_data['Ipv1']
+        Power_pred = output['i_sc']*output['v_oc']
+
+        print('Maximum Predicted Power = ',Power_pred.max(axis=0),'\n')
+
+        fig_voltage = plt.figure(figsize=[5,4])
+        ax_voltage = fig_voltage.add_subplot(111, title='Current Plot')
+        output.v_oc.plot(grid=True, label='Predicted', ax=ax_voltage)
+        self.solar_data.Vpv1.plot(grid=True, label='Original', ax=ax_voltage)
+
+        fig_current = plt.figure(figsize=[5,4])
+        ax_current = fig_current.add_subplot(111, title='Current Plot')
+        output.i_sc.plot(grid=True, label='Predicted', ax=ax_current)
+        self.solar_data.Ipv1.plot(grid=True, label='Original', ax=ax_current)
+
+        fig_power = plt.figure(figsize=[5,4])
+        ax_power = fig_power.add_subplot(111, title='Current Plot')
+        Power_pred.plot(grid=True, label='Predicted_dc', ax=ax_power)
+        Power_orig_dc.plot(grid=True, label='Original_dc', ax=ax_power)
+        Power_orig_ac.plot(grid=True, label='Original_ac', ax=ax_power)
+
+        return fig_voltage, fig_current, fig_power
 
     def plot_results(self, output, save_fig=False, model='High-level'):
         # Power calculated from the power plant data
@@ -142,18 +196,20 @@ class Model():
     def run_api(self):
         # Using the high level API
 
-        location = Location(latitude=self.lats, longitude=self.longs, altitude=self.altitude)
-        system = PVSystem(surface_tilt = self.tilt, surface_azimuth=self.surf_azi, albedo=self.albedo, 
+        self.preprocess()
+
+        self.location = Location(latitude=self.lats, longitude=self.longs, altitude=self.altitude)
+        self.system = PVSystem(surface_tilt = self.tilt, surface_azimuth=self.surf_azi, albedo=self.albedo, 
                         module_parameters=self.panel_model, inverter_parameters=self.inverter_model,
                         modules_per_string=self.mod_per_string, strings_per_inverter=self.str_per_inv, name=self.name)
-        mc = ModelChain(system, location, aoi_model='no_loss', name=self.name+'_ModelChain')
-        mc.run_model(times = self.weather_data.index, weather = self.weather_data)
-        output_hl = mc.dc
-        self.plot_results(output_hl)
+        self.mc = ModelChain(self.system, self.location, aoi_model='no_loss', name=self.name+'_ModelChain')
+        self.mc.run_model(times = self.weather_data.index, weather = self.weather_data)
+        self.output = self.mc.dc
 
 if __name__ == '__main__':
 
-    # Importing the dataset
+    Weather_data_path = '../data/weather/'
+    solar_data_path = '../data/solar/'
 
     weather_file = [f for f in listdir(Weather_data_path) if f.endswith('.csv')]
     solar_file = [f for f in listdir(solar_data_path) if (f.endswith('.csv'))]
@@ -161,5 +217,9 @@ if __name__ == '__main__':
     
     with open('../data/config.json') as jsonfile:
         data = json.load(jsonfile)
-    model = Model(weather_file[0], solar_file[0], data)
+    model = Model()
+    model.weather_file_setter(Weather_data_path + weather_file[0])
+    model.solar_file_setter( solar_data_path + solar_file[0])
+    model.data_setter(data)
     model.run_api()
+    model.plot_results(model.output)

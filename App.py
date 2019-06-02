@@ -1,20 +1,18 @@
 import tkinter as tk
-from tkinter import filedialog, Button, LabelFrame, PanedWindow, Label, Entry, Scale
-from tkinter.ttk import Combobox, Separator
-import os
-from src.util import get_inv_list, get_panel_list
+from tkinter import filedialog, Button, LabelFrame, PanedWindow, Label, Entry, Scale, messagebox
+from tkinter.ttk import Combobox, Separator, Notebook
 from json import load
+import os
+import sys
 
 import matplotlib
 matplotlib.use('TkAgg')
-
-from numpy import arange, sin, pi
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
-# implement the default mpl key bindings
 from matplotlib.backend_bases import key_press_handler
 
+from src.util import get_inv_list, get_panel_list
+from src.model import Model
 
-from matplotlib.figure import Figure
 
 curr_dir_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -29,9 +27,8 @@ class GUI(tk.Tk):
         super().__init__()
 
         self.title("Solar PV Plant Simulator")
-        # self.resizable(width=False, height=False)
-        self.geometry('300x450')
-
+        self.resizable(width=False, height=False)
+        # self.geometry('300x450')
         self.make_panes()
         self.make_browse_frame()
         self.make_model_selector()
@@ -39,6 +36,8 @@ class GUI(tk.Tk):
         self.make_config_frame()
         self.make_scale()
         self.make_bot_buttons()
+        self.modelname = 'PV Plant'
+        self.model = Model()
 
     def make_panes(self):
         self.p1 = PanedWindow(self, orient='vertical')
@@ -71,14 +70,26 @@ class GUI(tk.Tk):
         self.f11b2.grid(row=0, column=3)
 
     def openDialog_weather(self):
-        self.weather_path = filedialog.askopenfilename(initialdir = curr_dir_path,title = "Select file",filetypes = (("csv files","*.csv"),("Excel files","xlsx.*")))
+        self.weather_path = filedialog.askopenfilename(initialdir = curr_dir_path,title = "Select file", \
+                                                        filetypes = (("csv files","*.csv"),("Excel files","*.xlsx")))
+        self.f1l3.configure(text='Loading....')
         if self.weather_path != '':
-            self.update_datapath(self.weather_path, 'weather')
+            if self.model.weather_file_setter(self.weather_path):
+                self.update_datapath(self.weather_path, 'weather')
+                print('Weather browse path updated..')
+            else:
+                messagebox.showerror('Error', 'Error Updating the File Path')
 
     def openDialog_solar(self):
-        self.solar_path = filedialog.askopenfilename(initialdir = curr_dir_path,title = "Select file",filetypes = (("csv files","*.csv"),("Excel files","xlsx.*")))
+        self.solar_path = filedialog.askopenfilename(initialdir = curr_dir_path,title = "Select file", \
+                                                        filetypes = (("csv files","*.csv"),("Excel files","*.xlsx")))
+        self.f1l4.configure(text='Loading....')
         if self.solar_path != '':
-            self.update_datapath(self.solar_path)
+            if self.model.solar_file_setter(self.solar_path):
+                self.update_datapath(self.solar_path)
+                print('Solar browse path updated..')
+            else:
+                messagebox.showerror('Error', 'Error Updating the File Path')
             
     def update_datapath(self, text, pathname=''):
         if len(text) >35:
@@ -162,6 +173,7 @@ class GUI(tk.Tk):
             self.f4t5.delete(0, 'end')
             self.f4t5.insert(0,data['tilt'])
             self.f4s1.set(self.f4t5.get())
+            self.modelname = data['name']
 
     #Panel Configurations
     def make_config_frame(self):
@@ -203,54 +215,123 @@ class GUI(tk.Tk):
     
     #Make Bottom buttons
     def make_bot_buttons(self):
-        self.b1 = Button(self.p1, text = "SaveAs Json",width = 10)
+        self.b1 = Button(self.p1, text = "SaveAs Json(Not Working)",width = 10)
         self.p1.add(self.b1)
-        self.b3 = Button(self.p1, text = "Run Configuration", command = self.run_configs, width = 10)
-        self.p1.add(self.b3)
+        self.b4 = Button(self.p1, text = "Run Configuration", command = self.Run_model, width = 10)
+        self.p1.add(self.b4)
+        self.b5 = Button(self.p1, text = "Quit Simulator", command = self.quit, width = 10)
+        self.p1.add(self.b5)
 
+    def quit(self):
+        self.destroy()
+        sys.exit()
 
-    def run_configs(self):
+    """
+    This Function runs on pressing the Run Configuration button
+    1. Make the GUI Pane
+    2. Check if all the configs are correct
+    3. Export the config to model object
+    4. Run the Configuration
+
+    """
+    def Run_model(self):
         self.make_figure_frame()
-        add_figureto_frame(self.p2)
+        try:
+            self.export_data_toModel()
+        except:
+            self.close_fig()
+            messagebox.showerror('Invalid Format', 'One or More entries are in wrong format!!')
+            return None
+        self.model.run_api()
+        self.geometry('900x500')
+        self.add_figuresto_frame()
 
     def make_figure_frame(self):
-        self.geometry('900x480')
+        self.resizable(width=True, height=True)
         self.p2 = PanedWindow(self, orient='vertical')
-        self.p3 = PanedWindow(self, orient='horizontal')
-        self.p2f5 = LabelFrame(self.p2, text='Output Graph', width=590, height=400)
-        self.p2.add(self.p2f5)
-        self.f5b1 =  Button(self.p3, text = "Close", command = self.close_fig, width = 10)
-        self.p3.add(self.f5b1)
-        self.p2.grid(row=0, column=1, rowspan=1)
-        self.p3.grid(row=1, column=1)
+        self.p2N = Notebook(self.p2)
+        self.Ntab1 = LabelFrame(self.p2N)
+        self.Ntab1.grid()
+        self.Ntab2 = LabelFrame(self.p2N)
+        self.Ntab2.grid()
+        self.Ntab3 = LabelFrame(self.p2N)
+        self.Ntab3.grid()
+        self.p2N.add(self.Ntab1, text='Current')
+        self.p2N.add(self.Ntab2, text='Voltage')
+        self.p2N.add(self.Ntab3, text='Power')
+        self.p2N.grid()
+        self.p2.add(self.p2N)
+        self.p2.grid(row=0, column=1, rowspan=2,columnspan=2, sticky='nsew')
+        self.grid_columnconfigure(1, weight=1)
+        self.grid_rowconfigure(0, weight=1)
+
+        self.b3 =  Button(self.p1, text = "Close Figure", command = self.close_fig, width = 10)
+        self.p1.add(self.b3)
+
+    def export_data_toModel(self):
+        configdict = {}
+        configdict['lats'] = float(self.f3t1.get())
+        configdict['longs'] = float(self.f3t2.get())
+        configdict['tilt'] = float(self.f4s1.get())
+        configdict['surf_azi'] = float(self.f4t1.get())
+        configdict['altitude'] = float(self.f3t3.get())
+        configdict['name'] = self.modelname
+        configdict['timezone'] = self.f3t4.get()
+        configdict['module'] = self.f2co1.get()
+        configdict['inverter'] = self.f2co2.get()
+        configdict['modules_per_string'] = int(self.f4t2.get())
+        configdict['strings_per_inverter'] = int(self.f4t3.get())
+        configdict['albedo'] = float(self.f4t4.get())
+        flag, msg = self.model.data_setter(configdict)
+        if flag:
+            print('Data Exported to Model Successfully')
+        else:
+            print('Export Unsuccessfull '+msg)
+            messagebox.showerror('Invalid Model', msg)
+
+        return None
+
 
     def close_fig(self):
         self.p2.destroy()
-        self.p3.destroy()
-        self.geometry('300x450') 
+        self.b3.destroy()
+        self.resizable(width=False, height=False)
+        self.geometry("") 
 
 
-def add_figureto_frame(root):
+    def add_figuresto_frame(self):
+    
+        def on_key_event(event, canvas, toolbar):
+            print('you pressed %s' % event.key)
+            key_press_handler(event, canvas, toolbar)
 
-    def on_key_event(event):
-        print('you pressed %s' % event.key)
-        key_press_handler(event, canvas, toolbar)
+        f_v, f_c, f_p = self.model.export_fig(self.model.output)
 
-    f = Figure(figsize=(5, 4), dpi=100)
-    a = f.add_subplot(111)
-    t = arange(0.0, 3.0, 0.01)
-    s = sin(2*pi*t)
+        canvas_v = FigureCanvasTkAgg(f_v, master=self.Ntab1)
+        canvas_v.draw()
+        canvas_v.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+        toolbar_v = NavigationToolbar2Tk(canvas_v, self.Ntab1)
+        toolbar_v.update()
+        canvas_v._tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+        canvas_v.mpl_connect('key_press_event', lambda x :on_key_event(x, canvas_v, toolbar_v))
 
-    a.plot(t, s)
+        canvas_c = FigureCanvasTkAgg(f_c, master=self.Ntab2)
+        canvas_c.draw()
+        canvas_c.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+        toolbar_c = NavigationToolbar2Tk(canvas_c, self.Ntab2)
+        toolbar_c.update()
+        canvas_c._tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+        canvas_c.mpl_connect('key_press_event', lambda x:on_key_event(x, canvas_c, toolbar_c))
 
-    canvas = FigureCanvasTkAgg(f, master=root)
-    canvas.draw()
-    canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+        canvas_p = FigureCanvasTkAgg(f_p, master=self.Ntab3)
+        canvas_p.draw()
+        canvas_p.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+        toolbar_p = NavigationToolbar2Tk(canvas_p, self.Ntab3)
+        toolbar_p.update()
+        canvas_p._tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+        canvas_p.mpl_connect('key_press_event', lambda x:on_key_event(x, canvas_p, toolbar_p))
 
-    toolbar = NavigationToolbar2Tk(canvas, root)
-    toolbar.update()
-    canvas._tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=1)
-    canvas.mpl_connect('key_press_event', on_key_event)
+        return None
 
 
 if __name__ == "__main__":
