@@ -5,6 +5,17 @@ import os
 from src.util import get_inv_list, get_panel_list
 from json import load
 
+import matplotlib
+matplotlib.use('TkAgg')
+
+from numpy import arange, sin, pi
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
+# implement the default mpl key bindings
+from matplotlib.backend_bases import key_press_handler
+
+
+from matplotlib.figure import Figure
+
 curr_dir_path = os.path.dirname(os.path.realpath(__file__))
 
 class GUI(tk.Tk):
@@ -19,7 +30,7 @@ class GUI(tk.Tk):
 
         self.title("Solar PV Plant Simulator")
         # self.resizable(width=False, height=False)
-        self.geometry('305x420')
+        self.geometry('300x450')
 
         self.make_panes()
         self.make_browse_frame()
@@ -40,7 +51,7 @@ class GUI(tk.Tk):
         self.p1.add(self.p1f2)
         self.p1.add(self.p1f3)
         self.p1.add(self.p1f4)
-        self.p1.grid(row=0, column=0)
+        self.p1.grid(row=0, column=0, rowspan=2, sticky='n')
 
 
     #Browse frame
@@ -194,8 +205,53 @@ class GUI(tk.Tk):
     def make_bot_buttons(self):
         self.b1 = Button(self.p1, text = "SaveAs Json",width = 10)
         self.p1.add(self.b1)
-        self.b3 = Button(self.p1, text = "Run Configuration",width = 10)
+        self.b3 = Button(self.p1, text = "Run Configuration", command = self.run_configs, width = 10)
         self.p1.add(self.b3)
+
+
+    def run_configs(self):
+        self.make_figure_frame()
+        add_figureto_frame(self.p2)
+
+    def make_figure_frame(self):
+        self.geometry('900x480')
+        self.p2 = PanedWindow(self, orient='vertical')
+        self.p3 = PanedWindow(self, orient='horizontal')
+        self.p2f5 = LabelFrame(self.p2, text='Output Graph', width=590, height=400)
+        self.p2.add(self.p2f5)
+        self.f5b1 =  Button(self.p3, text = "Close", command = self.close_fig, width = 10)
+        self.p3.add(self.f5b1)
+        self.p2.grid(row=0, column=1, rowspan=1)
+        self.p3.grid(row=1, column=1)
+
+    def close_fig(self):
+        self.p2.destroy()
+        self.p3.destroy()
+        self.geometry('300x450') 
+
+
+def add_figureto_frame(root):
+
+    def on_key_event(event):
+        print('you pressed %s' % event.key)
+        key_press_handler(event, canvas, toolbar)
+
+    f = Figure(figsize=(5, 4), dpi=100)
+    a = f.add_subplot(111)
+    t = arange(0.0, 3.0, 0.01)
+    s = sin(2*pi*t)
+
+    a.plot(t, s)
+
+    canvas = FigureCanvasTkAgg(f, master=root)
+    canvas.draw()
+    canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+
+    toolbar = NavigationToolbar2Tk(canvas, root)
+    toolbar.update()
+    canvas._tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+    canvas.mpl_connect('key_press_event', on_key_event)
+
 
 if __name__ == "__main__":
     gui = GUI()
