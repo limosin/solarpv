@@ -26,7 +26,7 @@ __Requirements__
 
 ###
 __How to Run??__
-0. Follow till step 5 as given above.
+Follow till step 5 as given above.
 1. Simply run `python App.py`
 2. Browse the weather and solar data files. The app might take a few seconds to load.
 3. Enter all the values, or simply click `Load Json` to load from the `data/config.json` file. This will automatically fill all the fields depending on the values in the json file.
