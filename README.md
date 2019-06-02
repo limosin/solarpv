@@ -25,7 +25,7 @@ __Requirements__
 5. matplotlib
 
 ###
-__How to Run??__
+__How to Run??__<br>
 Follow till step 5 as given above.
 1. Simply run `python App.py`
 2. Browse the weather and solar data files. The app might take a few seconds to load.
