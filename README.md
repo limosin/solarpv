@@ -14,6 +14,9 @@
 7. Now you can use the model.ipynb Ipython Notebook for viewing the analysis.
 
 ## Update: GUI Support
+
+<p>To make experimenting easier, I have added a GUI support which lets you change the important parameters on the fly and visualize the changes in the app itself. The App has been made using Tkinter, hence does not have the best of the visuals
+      
 __Requirements__
 1. Tkinter
 2. os
@@ -39,8 +42,6 @@ __NOTE__ : There are three __tabs__, showing the current, voltage and power grap
 
 ### Zooming and Maximizing
 ![Main Window](/media/gui_run2.png)
-
-<p>To make experimenting easier, I have added a GUI support which lets you change the important parameters on the fly and lets you visualize the changes in the app itself. The App has been made using Tkinter, hence does not have the best of the visuals
       
 ### Known Issues
 - Currently using the high-level api for calculating the model output, which is quite inaccurate.
