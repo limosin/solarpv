@@ -43,7 +43,7 @@ __NOTE__ : There are three __tabs__, showing the current, voltage and power grap
 <p>To make experimenting easier, I have added a GUI support which lets you change the important parameters on the fly and lets you visualize the changes in the app itself. The App has been made using Tkinter, hence does not have the best of the visuals
       
 ### Known Issues
-- Currently using the high-level api for calculating the model output, which is quite unaccurate.
+- Currently using the high-level api for calculating the model output, which is quite inaccurate.
 - The GUI on pressing the `Run Configurations` button goes blank, and returns back when the simulation finishes.
 - Lots of knitty-gritty improvements required.
 - Changing the value in tilt entry does not changes the slider location, while reverse happens.
