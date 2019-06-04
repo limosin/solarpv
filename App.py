@@ -16,6 +16,18 @@ from src.model import Model
 
 curr_dir_path = os.path.dirname(os.path.realpath(__file__))
 
+class Canvas(FigureCanvasTkAgg):
+    def __init__(self, figure, master):
+        super.__init__(figure, master)
+        self.toolbar = NavigationToolbar2Tk(self, master)
+    
+    def plotfigure(self):
+        self.draw()
+        self.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+        self.toolbar.update()
+        self._tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+
+
 class GUI(tk.Tk):
 
     # PANEL_MODELS = tuple(['Select'] + get_panel_list())
@@ -38,6 +50,7 @@ class GUI(tk.Tk):
         self.make_bot_buttons()
         self.modelname = 'PV Plant'
         self.model = Model()
+        self.canvas_v = None
 
     def make_panes(self):
         self.p1 = PanedWindow(self, orient='vertical')
@@ -228,14 +241,18 @@ class GUI(tk.Tk):
 
     """
     This Function runs on pressing the Run Configuration button
-    1. Make the GUI Pane
+    1. Make the GUI Pane if it doesn't exists.
     2. Check if all the configs are correct
     3. Export the config to model object
     4. Run the Configuration
 
     """
     def Run_model(self):
-        self.make_figure_frame()
+        try:
+            if (not self.p2.winfo_exists()) and (not self.b3.winfo_exists()):
+                self.make_figure_frame()
+        except:
+            self.make_figure_frame()
         try:
             self.export_data_toModel()
         except:
@@ -301,32 +318,32 @@ class GUI(tk.Tk):
 
     def add_figuresto_frame(self):
     
-        def on_key_event(event, canvas, toolbar):
-            print('you pressed %s' % event.key)
-            key_press_handler(event, canvas, toolbar)
-
         f_v, f_c, f_p = self.model.export_fig(self.model.output)
 
-        canvas_v = FigureCanvasTkAgg(f_v, master=self.Ntab1)
+        if self.canvas_v != None:
+            self.canvas_v = Canvas(f_v, self.Ntab1)
+        
+
+        canvas_v = FigureCanvasTkAgg(f_v, master=Ntab1)
         canvas_v.draw()
         canvas_v.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
-        toolbar_v = NavigationToolbar2Tk(canvas_v, self.Ntab1)
+        toolbar_v = NavigationToolbar2Tk(canvas_v, Ntab1)
         toolbar_v.update()
         canvas_v._tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=1)
         canvas_v.mpl_connect('key_press_event', lambda x :on_key_event(x, canvas_v, toolbar_v))
 
-        canvas_c = FigureCanvasTkAgg(f_c, master=self.Ntab2)
+        canvas_c = FigureCanvasTkAgg(f_c, master=Ntab2)
         canvas_c.draw()
         canvas_c.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
-        toolbar_c = NavigationToolbar2Tk(canvas_c, self.Ntab2)
+        toolbar_c = NavigationToolbar2Tk(canvas_c, Ntab2)
         toolbar_c.update()
         canvas_c._tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=1)
         canvas_c.mpl_connect('key_press_event', lambda x:on_key_event(x, canvas_c, toolbar_c))
 
-        canvas_p = FigureCanvasTkAgg(f_p, master=self.Ntab3)
+        canvas_p = FigureCanvasTkAgg(f_p, master=Ntab3)
         canvas_p.draw()
         canvas_p.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
-        toolbar_p = NavigationToolbar2Tk(canvas_p, self.Ntab3)
+        toolbar_p = NavigationToolbar2Tk(canvas_p, Ntab3)
         toolbar_p.update()
         canvas_p._tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=1)
         canvas_p.mpl_connect('key_press_event', lambda x:on_key_event(x, canvas_p, toolbar_p))
