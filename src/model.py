@@ -145,7 +145,7 @@ class Model():
     def export_figures(self):
         print('Maximum Predicted Power = ',self.Power_pred.max(axis=0),'\n')
 
-        self.output.v_oc.plot(grid=True,color='b', label='Predicted', ax=self.ax_voltage)
+        self.output.v_oc.plot(grid=True,color='#00A3E0', label='Predicted', ax=self.ax_voltage)
         self.solar_data.Vpv1.plot(grid=True,color='r', label='Original', ax=self.ax_voltage)
         self.ax_voltage.legend(loc='upper right')
 
@@ -155,7 +155,7 @@ class Model():
 
         self.Power_pred.plot(grid=True,color='y', label='Predicted_dc', ax=self.ax_power)
         self.Power_orig_dc.plot(grid=True,color='m', label='Original_dc', ax=self.ax_power)
-        self.Power_orig_ac.plot(grid=True,color='r', label='Original_ac', ax=self.ax_power)
+        self.Power_orig_ac.plot(grid=True,color='#183A54', label='Original_ac', ax=self.ax_power)
         self.ax_power.legend(loc='upper right')
 
 

@@ -30,8 +30,8 @@ class GUI(tk.Tk):
         super().__init__()
 
         self.title("Solar PV Plant Simulator")
-        self.resizable(width=False, height=False)
-        # self.geometry('300x450')
+        # self.resizable(width=False, height=False)
+        self.geometry('+600+300')
         self.make_panes()
         self.make_browse_frame()
         self.make_model_selector()
@@ -41,6 +41,7 @@ class GUI(tk.Tk):
         self.make_bot_buttons()
         self.modelname = 'PV Plant'
         self.model = Model()
+        self.protocol('WM_DELETE_WINDOW', quit)
 
     def make_panes(self):
         self.p1 = PanedWindow(self, orient='vertical')
@@ -262,7 +263,6 @@ class GUI(tk.Tk):
         self.update_figures()
 
     def make_figure_frame(self):
-        self.resizable(width=True, height=True)
         self.p2 = PanedWindow(self, orient='vertical')
         self.p2N = Notebook(self.p2)
         self.Ntab1 = LabelFrame(self.p2N)
