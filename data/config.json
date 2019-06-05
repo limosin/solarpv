@@ -10,7 +10,5 @@
     "inverter":"Power_One__PVI_3_8_OUTD_S_US_Z_A__240V__240V__CEC_2018_",
     "modules_per_string": 16,
     "strings_per_inverter":1,
-    "albedo": 0.4,
-    "weather_path" : "data/weather/Kota.csv",
-    "solar_path" : "data/solar/February2019.csv"
+    "albedo": 0.4
 }

@@ -6,15 +6,18 @@ import os
 import sys
 
 import matplotlib
-matplotlib.use('TkAgg')
+from matplotlib import style
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from matplotlib.backend_bases import key_press_handler
+matplotlib.use('TkAgg')
+style.use('ggplot')
 
 from src.util import get_inv_list, get_panel_list
 from src.model import Model
 
 
 curr_dir_path = os.path.dirname(os.path.realpath(__file__))
+
 
 class GUI(tk.Tk):
 
@@ -175,6 +178,9 @@ class GUI(tk.Tk):
             self.f4s1.set(self.f4t5.get())
             self.modelname = data['name']
 
+            self.model.weather_file_setter("C:/Users/coola/Projects/solarpv/data/weather/Kota.csv")
+            self.model.solar_file_setter("C:/Users/coola/Projects/solarpv/data/solar/February2019.csv")
+
     #Panel Configurations
     def make_config_frame(self):
         self.f4l1 = Label(self.p1f4, text='Surf Azimuth')
@@ -228,7 +234,7 @@ class GUI(tk.Tk):
 
     """
     This Function runs on pressing the Run Configuration button
-    1. Make the GUI Pane
+    1. Make the GUI Pane if it doesn't exists.
     2. Check if all the configs are correct
     3. Export the config to model object
     4. Run the Configuration
@@ -244,7 +250,16 @@ class GUI(tk.Tk):
             return None
         self.model.run_api()
         self.geometry('900x500')
-        self.add_figuresto_frame()
+        self.add_figures()
+
+    def Refresh_model(self):
+        try:
+            self.export_data_toModel()
+        except:
+            messagebox.showerror('Invalid Format', 'One or More entries are in wrong format!!')
+            return None
+        self.model.run_api()
+        self.update_figures()
 
     def make_figure_frame(self):
         self.resizable(width=True, height=True)
@@ -256,8 +271,8 @@ class GUI(tk.Tk):
         self.Ntab2.grid()
         self.Ntab3 = LabelFrame(self.p2N)
         self.Ntab3.grid()
-        self.p2N.add(self.Ntab1, text='Current')
-        self.p2N.add(self.Ntab2, text='Voltage')
+        self.p2N.add(self.Ntab1, text='Voltage')
+        self.p2N.add(self.Ntab2, text='Current')
         self.p2N.add(self.Ntab3, text='Power')
         self.p2N.grid()
         self.p2.add(self.p2N)
@@ -265,8 +280,11 @@ class GUI(tk.Tk):
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
+        self.b4.config(text='Refresh', command = self.Refresh_model)
+
         self.b3 =  Button(self.p1, text = "Close Figure", command = self.close_fig, width = 10)
         self.p1.add(self.b3)
+
 
     def export_data_toModel(self):
         configdict = {}
@@ -293,45 +311,39 @@ class GUI(tk.Tk):
 
 
     def close_fig(self):
+        self.b4.config(text='Run Configurations', command = self.Run_model)
         self.p2.destroy()
         self.b3.destroy()
         self.resizable(width=False, height=False)
         self.geometry("") 
 
 
-    def add_figuresto_frame(self):
-    
-        def on_key_event(event, canvas, toolbar):
-            print('you pressed %s' % event.key)
-            key_press_handler(event, canvas, toolbar)
-
-        f_v, f_c, f_p = self.model.export_fig(self.model.output)
-
-        canvas_v = FigureCanvasTkAgg(f_v, master=self.Ntab1)
-        canvas_v.draw()
-        canvas_v.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
-        toolbar_v = NavigationToolbar2Tk(canvas_v, self.Ntab1)
-        toolbar_v.update()
-        canvas_v._tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=1)
-        canvas_v.mpl_connect('key_press_event', lambda x :on_key_event(x, canvas_v, toolbar_v))
-
-        canvas_c = FigureCanvasTkAgg(f_c, master=self.Ntab2)
-        canvas_c.draw()
-        canvas_c.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
-        toolbar_c = NavigationToolbar2Tk(canvas_c, self.Ntab2)
-        toolbar_c.update()
-        canvas_c._tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=1)
-        canvas_c.mpl_connect('key_press_event', lambda x:on_key_event(x, canvas_c, toolbar_c))
-
-        canvas_p = FigureCanvasTkAgg(f_p, master=self.Ntab3)
-        canvas_p.draw()
-        canvas_p.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
-        toolbar_p = NavigationToolbar2Tk(canvas_p, self.Ntab3)
-        toolbar_p.update()
-        canvas_p._tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=1)
-        canvas_p.mpl_connect('key_press_event', lambda x:on_key_event(x, canvas_p, toolbar_p))
-
+    def add_figures(self):
+        self.canvas_v, self.toolbar_v = self.add_canvas(self.model.fig_voltage, self.Ntab1)
+        self.canvas_c, self.toolbar_c = self.add_canvas(self.model.fig_current, self.Ntab2)
+        self.canvas_p, self.toolbar_p = self.add_canvas(self.model.fig_power, self.Ntab3)
+        self.model.export_figures()
+        self.canvas_v.draw()
+        self.canvas_c.draw()
+        self.canvas_p.draw()
         return None
+
+    def add_canvas(self, figure, master):
+        canvas = FigureCanvasTkAgg(figure, master=master)
+        canvas.get_tk_widget().pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+        toolbar = NavigationToolbar2Tk(canvas, master)
+        toolbar.update()
+        canvas._tkcanvas.pack(side=tk.TOP, fill=tk.BOTH, expand=1)
+        return canvas, toolbar
+
+    def update_figures(self):
+        self.model.update_figures()
+        self.canvas_v.draw()
+        self.canvas_c.draw()
+        self.canvas_p.draw()
+        self.toolbar_v.update()
+        self.toolbar_c.update()
+        self.toolbar_p.update()
 
 
 if __name__ == "__main__":
