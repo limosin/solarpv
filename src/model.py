@@ -47,6 +47,15 @@ class Model():
         self.output = 0
         self.weather_data = None
         self.solar_data = None
+
+        self.Power_pred = 0
+
+        self.fig_voltage = plt.figure(figsize=[5,4])
+        self.fig_current = plt.figure(figsize=[5,4])
+        self.fig_power = plt.figure(figsize=[5,4])
+        self.ax_voltage = self.fig_voltage.add_subplot(111, title='Voltage Plot')
+        self.ax_current = self.fig_current.add_subplot(111, title='Current Plot')
+        self.ax_power = self.fig_power.add_subplot(111, title='Power Plot')
     
     def weather_file_setter(self, filepath):
         self.weather_file = filepath
@@ -65,7 +74,9 @@ class Model():
             self.solar_data = pd.read_csv(self.solar_file)
             self.solar_data['Timestamp'] = pd.to_datetime(self.solar_data['Timestamp'].values, \
                                                         utc=True).tz_convert('Asia/Kolkata')
-            self.solar_data.index = self.solar_data['Timestamp']   
+            self.solar_data.index = self.solar_data['Timestamp']
+            self.Power_orig_ac = self.solar_data['Pac']
+            self.Power_orig_dc = self.solar_data['Vpv1']*self.solar_data['Ipv1']
             return True
         except:
             return False
@@ -131,56 +142,65 @@ class Model():
             self.weather_data.loc['2018-08-19 13:03:00+05:30','relative_humidity'] = 70
             self.weather_data['precipitable_water'] = gueymard94_pw(self.weather_data['temp_air'], self.weather_data['relative_humidity'])
 
-    def export_fig(self, output):
-        Power_orig_ac = self.solar_data['Pac']
-        Power_orig_dc = self.solar_data['Vpv1']*self.solar_data['Ipv1']
-        Power_pred = output['i_sc']*output['v_oc']
+    def export_figures(self):
+        print('Maximum Predicted Power = ',self.Power_pred.max(axis=0),'\n')
 
-        print('Maximum Predicted Power = ',Power_pred.max(axis=0),'\n')
+        self.output.v_oc.plot(grid=True,color='b', label='Predicted', ax=self.ax_voltage)
+        self.solar_data.Vpv1.plot(grid=True,color='r', label='Original', ax=self.ax_voltage)
+        self.ax_voltage.legend(loc='upper right')
 
-        fig_voltage = plt.figure(figsize=[5,4])
-        ax_voltage = fig_voltage.add_subplot(111, title='Current Plot')
-        output.v_oc.plot(grid=True, label='Predicted', ax=ax_voltage)
-        self.solar_data.Vpv1.plot(grid=True, label='Original', ax=ax_voltage)
+        self.output.i_sc.plot(grid=True,color='c', label='Predicted', ax=self.ax_current)
+        self.solar_data.Ipv1.plot(grid=True,color='g', label='Original', ax=self.ax_current)
+        self.ax_current.legend(loc='upper right')
 
-        fig_current = plt.figure(figsize=[5,4])
-        ax_current = fig_current.add_subplot(111, title='Current Plot')
-        output.i_sc.plot(grid=True, label='Predicted', ax=ax_current)
-        self.solar_data.Ipv1.plot(grid=True, label='Original', ax=ax_current)
+        self.Power_pred.plot(grid=True,color='y', label='Predicted_dc', ax=self.ax_power)
+        self.Power_orig_dc.plot(grid=True,color='m', label='Original_dc', ax=self.ax_power)
+        self.Power_orig_ac.plot(grid=True,color='r', label='Original_ac', ax=self.ax_power)
+        self.ax_power.legend(loc='upper right')
 
-        fig_power = plt.figure(figsize=[5,4])
-        ax_power = fig_power.add_subplot(111, title='Current Plot')
-        Power_pred.plot(grid=True, label='Predicted_dc', ax=ax_power)
-        Power_orig_dc.plot(grid=True, label='Original_dc', ax=ax_power)
-        Power_orig_ac.plot(grid=True, label='Original_ac', ax=ax_power)
 
-        return fig_voltage, fig_current, fig_power
+    def update_figures(self):
+        print('Maximum Predicted Power = ',self.Power_pred.max(axis=0),'\n')
+        self.ax_voltage.cla()
+        self.ax_current.cla()
+        self.ax_power.cla()
 
-    def plot_results(self, output, save_fig=False, model='High-level'):
+        self.output.v_oc.plot(grid=True,color='#00A3E0', label='Predicted', ax=self.ax_voltage)
+        self.solar_data.Vpv1.plot(grid=True,color='r', label='Original', ax=self.ax_voltage)
+        self.ax_voltage.legend(loc='upper right')
+
+        self.output.i_sc.plot(grid=True,color='c', label='Predicted', ax=self.ax_current)
+        self.solar_data.Ipv1.plot(grid=True,color='g', label='Original', ax=self.ax_current)
+        self.ax_current.legend(loc='upper right')
+
+        self.Power_pred.plot(grid=True,color='y', label='Predicted_dc', ax=self.ax_power)
+        self.Power_orig_dc.plot(grid=True,color='m', label='Original_dc', ax=self.ax_power)
+        self.Power_orig_ac.plot(grid=True,color='#183A54', label='Original_ac', ax=self.ax_power)
+        self.ax_power.legend(loc='upper right')
+
+
+    def plot_results(self, save_fig=False, model='High-level'):
         # Power calculated from the power plant data
-        Power_orig_ac = self.solar_data['Pac']
-        Power_orig_dc = self.solar_data['Vpv1']*self.solar_data['Ipv1']
             
-        Power_pred = output['i_sc']*output['v_oc']
-        print('Maximum Predicted Power = ',Power_pred.max(axis=0),'\n')
+        print('Maximum Predicted Power = ',self.Power_pred.max(axis=0),'\n')
         print('\nPower Plots\n')
         plt.figure(figsize=[10,6])
         plt.subplot(311)
-        output.v_oc[0:1500].plot(grid=True, label='Predicted')
+        self.output.v_oc[0:1500].plot(grid=True, label='Predicted')
         self.solar_data.Vpv1[0:1500].plot(grid=True, label='Original')
         plt.title('Voltage')
         plt.legend()
         
         plt.subplot(312)
-        output.i_sc[0:1500].plot(grid=True, label='Predicted')
+        self.output.i_sc[0:1500].plot(grid=True, label='Predicted')
         self.solar_data.Ipv1[0:1500].plot(grid=True, label='Original')
         plt.title('Current')
         plt.legend()
         
         plt.subplot(313)
-        Power_pred[0:1500].plot(grid=True, label='Predicted_dc')
-        Power_orig_dc[0:1500].plot(grid=True, label='Original_dc')
-        Power_orig_ac[0:1500].plot(grid=True, label='Original_ac')
+        self.Power_pred[0:1500].plot(grid=True, label='Predicted_dc')
+        self.Power_orig_dc[0:1500].plot(grid=True, label='Original_dc')
+        self.Power_orig_ac[0:1500].plot(grid=True, label='Original_ac')
         plt.title('Power')
         plt.legend()
         plt.show()
@@ -191,7 +211,7 @@ class Model():
             plt.savefig(fname='predictions_power')
 
         print('\n\nDistribution of Values\n')
-        Power_pred.hist(figsize = [10,3],bins=20)
+        self.Power_pred.hist(figsize = [10,3],bins=20)
 
     def run_api(self):
         # Using the high level API
@@ -205,6 +225,7 @@ class Model():
         self.mc = ModelChain(self.system, self.location, aoi_model='no_loss', name=self.name+'_ModelChain')
         self.mc.run_model(times = self.weather_data.index, weather = self.weather_data)
         self.output = self.mc.dc
+        self.Power_pred = self.output['i_sc']*self.output['v_oc']
 
 if __name__ == '__main__':
 
@@ -222,4 +243,4 @@ if __name__ == '__main__':
     model.solar_file_setter( solar_data_path + solar_file[0])
     model.data_setter(data)
     model.run_api()
-    model.plot_results(model.output)
+    model.plot_results()
